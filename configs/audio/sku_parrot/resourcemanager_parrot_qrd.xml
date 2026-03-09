@@ -37,11 +37,10 @@
         <param key="context_manager_enable" value ="false" />
     </config_params>
     <config_volume>
-        <use_volume_set_param>1</use_volume_set_param>
+        <use_volume_set_param>0</use_volume_set_param>
         <supported_streams>
+            <supported_stream>PAL_STREAM_ULTRA_LOW_LATENCY</supported_stream>
             <supported_stream>PAL_STREAM_COMPRESSED</supported_stream>
-            <supported_stream>PAL_STREAM_PCM_OFFLOAD</supported_stream>
-            <supported_stream>PAL_STREAM_VOIP_RX</supported_stream>
         </supported_streams>
     </config_volume>
     <config_gapless key="gapless_supported" value="1"/>
@@ -108,6 +107,10 @@
                     <channels>1</channels>
                     <snd_device_name>mic2</snd_device_name>
                 </custom-config>
+                <custom-config key="mic3">
+                    <channels>1</channels>
+                    <snd_device_name>mic3</snd_device_name>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOIP_TX</name>
@@ -130,26 +133,6 @@
             </usecase>
             <usecase>
                 <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_RAW</name>
-                <snd_device_name>unprocessed-mic</snd_device_name>
-                <custom-config key="unprocessed-hdr-mic-landscape">
-                    <channels>4</channels>
-                    <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
-                </custom-config>
-                <custom-config key="unprocessed-hdr-mic-portrait">
-                    <channels>4</channels>
-                    <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
-                </custom-config>
-                <custom-config key="unprocessed-hdr-mic-inverted-landscape">
-                    <channels>4</channels>
-                    <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
-                </custom-config>
-                <custom-config key="unprocessed-hdr-mic-inverted-portrait">
-                    <channels>4</channels>
-                    <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
-                </custom-config>
             </usecase>
             <ec_rx_device>
                 <id>PAL_DEVICE_OUT_HANDSET</id>
@@ -181,6 +164,11 @@
                     <channels>1</channels>
                     <snd_device_name>screen-record-mic</snd_device_name>
                 </custom-config>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_RAW</name>
+                <channels>2</channels>
+                <snd_device_name>handset-dmic-endfire-cam-record</snd_device_name>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOIP_TX</name>
@@ -221,6 +209,14 @@
             </usecase>
             <usecase>
                 <name>PAL_STREAM_DEEP_BUFFER</name>
+                <custom-config key="mic1">
+                    <channels>1</channels>
+                    <snd_device_name>mic1</snd_device_name>
+                </custom-config>
+                <custom-config key="mic2">
+                    <channels>1</channels>
+                    <snd_device_name>mic2</snd_device_name>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOIP_TX</name>
@@ -419,7 +415,7 @@
             <samplerate>48000</samplerate>
             <bit_width>32</bit_width>
             <snd_device_name>speaker</snd_device_name>
-            <speaker_protection_enabled>0</speaker_protection_enabled>
+            <speaker_protection_enabled>1</speaker_protection_enabled>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
             <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
             <cps_enabled>0</cps_enabled>
