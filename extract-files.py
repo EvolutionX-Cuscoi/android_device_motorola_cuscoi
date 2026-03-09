@@ -23,7 +23,7 @@ namespace_imports = [
     'device/motorola/sm7435-common',
     'vendor/motorola/sm7435-common',
     'hardware/motorola',
-    'hardware/qcom-caf/sm8450',
+    'hardware/qcom-caf/sm8450-6.6',
     'vendor/qcom/opensource/commonsys-intf/display',
 ]
 
