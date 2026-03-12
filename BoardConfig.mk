@@ -24,7 +24,7 @@ TARGET_BOOTLOADER_BOARD_NAME := cuscoi
 
 # Manifest
 ODM_MANIFEST_SKUS += b d
-ODM_MANIFEST_B_FILES := $(DEVICE_PATH)/sku/manifest_b.xml $(COMMON_PATH)/configs/vintf/manifest_parrot_ss.xml
+ODM_MANIFEST_B_FILES := $(DEVICE_PATH)/sku/manifest_b.xml
 ODM_MANIFEST_D_FILES := $(DEVICE_PATH)/sku/manifest_d.xml
 
 # Partitions
