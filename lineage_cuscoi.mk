@@ -33,6 +33,6 @@ PRODUCT_MODEL := motorola edge 50 fusion
 PRODUCT_GMS_CLIENTID_BASE := android-motorola
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
-    BuildDesc="cuscoi_g-user 15 V1UUIS35H.15-41-6-5-1 99a7e release-keys" \
-    BuildFingerprint=motorola/cuscoi_g/cuscoi:15/V1UUIS35H.15-41-6-5-1/99a7e:user/release-keys \
+    BuildDesc="cuscoi_g-user 16 W1UUI36H.110-31 2b2119-93af0 release-keys" \
+    BuildFingerprint=motorola/cuscoi_g/cuscoi:16/W1UUI36H.110-31/2b2119-93af0:user/release-keys \
     DeviceProduct=cuscoi_g
