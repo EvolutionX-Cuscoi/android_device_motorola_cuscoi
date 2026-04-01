@@ -24,10 +24,13 @@
     <string name="config_protectedCameraId" translatable="false">1</string>
 
     <!--  Flag to turn on the rendering of the above path or not  -->
-    <bool name="config_enableDisplayCutoutProtection">true</bool>
+    <bool name="config_enableDisplayCutoutProtection">false</bool>
 
     <!-- Burn in protection -->
-    <bool name="config_statusBarBurnInProtection">true</bool>
+    <bool name="config_statusBarBurnInProtection">false</bool>
     <integer name="config_shift_interval">60</integer>
 
+    <!-- Preferred max refresh rate at AOD & Ambient Display, if supported by the display. -->
+    <integer name="config_aodMaxRefreshRate">60</integer>
+    
 </resources>

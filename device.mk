@@ -23,6 +23,9 @@ PRODUCT_AAPT_PREBUILT_DPI := xxxhdpi xxhdpi xhdpi hdpi
 TARGET_SCREEN_HEIGHT := 2400
 TARGET_SCREEN_WIDTH := 1080
 
+# Camera Extensions
+$(call soong_config_set,libcameraservice,ext_lib,//$(LOCAL_PATH):libcameraservice_extension.cuscoi)
+
 # Init
 $(foreach f,$(wildcard $(LOCAL_PATH)/rootdir/etc/init/hw/*.rc),\
         $(eval PRODUCT_COPY_FILES += $(f):$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/$(notdir $f)))
@@ -34,13 +37,24 @@ $(foreach f,$(wildcard $(LOCAL_PATH)/rootdir/bin/*.sh),\
 # NFC
 TARGET_USES_ST_NFC := true
 
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/recovery/root/init.recovery.touch.rc:recovery/root/init.recovery.touch.rc
+    
 # Overlay
 PRODUCT_PACKAGES += \
     FrameworksResDevice \
     LineageSystemUIDevice \
     SettingsResDevice \
     SystemUIResDevice \
-    WifiResDevice
+    WifiResDevice \
+    LauncherOverlay
+
+# DeviceAsWebcam
+PRODUCT_PACKAGES += \
+    DeviceAsWebcam
+
+PRODUCT_PACKAGES += \
+    RemovePackages
 
 # Screen
 TARGET_SCREEN_DENSITY := 400

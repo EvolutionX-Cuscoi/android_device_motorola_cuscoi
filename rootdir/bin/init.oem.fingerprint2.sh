@@ -109,9 +109,9 @@ function start_hal_service(){
         return 0
     fi
 
-    #log "start ${hal_list[$1]} hal failed, remove kernel so: ${kernel_so_name_list[$1]} "
-    #setprop ctl.stop ${hal_list[$1]}
-    #rmmod ${kernel_so_name_list[$1]}
+    log "start ${hal_list[$1]} hal failed, remove kernel so: ${kernel_so_name_list[$1]} "
+    setprop ctl.stop ${hal_list[$1]}
+    rmmod ${kernel_so_name_list[$1]}
     sleep 0.1
     # if failed,return 255
     return 255

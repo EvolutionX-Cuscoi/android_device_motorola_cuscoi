@@ -1,11 +1,5 @@
 import /vendor/etc/init/hw/init.vendor.st21nfc.rc
 
-on early-init
-   exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -r -d /vendor/lib/modules zram
-
-on late-init
-   exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -a -d /vendor/lib/modules moto_mm moto_swap
-
 on fs
 	insmod /vendor/lib/modules/msm_drm.ko
 	insmod /vendor/lib/modules/mmi_annotate.ko
@@ -218,6 +212,14 @@ on boot
     chown system system /sys/class/power_supply/wireless/device/wlc_tx_type
     chmod 0660 /sys/class/power_supply/wireless/device/wlc_light_ctl
     chmod 0660 /sys/class/power_supply/wireless/device/wlc_fan_speed
+
+    # Set leds perms
+    chown cameraserver camera /sys/class/leds/led:torch_0/brightness
+    chown cameraserver camera /sys/class/leds/led:torch_1/brightness
+    chown cameraserver camera /sys/class/leds/led:switch_0/brightness
+    chmod 0660 /sys/class/leds/led:torch_0/brightness
+    chmod 0660 /sys/class/leds/led:torch_1/brightness
+    chmod 0660 /sys/class/leds/led:switch_0/brightness
 
     write /proc/sys/vm/dirty_background_bytes 26214400
     write /proc/sys/vm/dirty_bytes 104857600

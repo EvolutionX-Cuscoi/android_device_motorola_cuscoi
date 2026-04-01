@@ -225,22 +225,31 @@
     <bool name="config_fillMainBuiltInDisplayCutout">true</bool>
 
     <!-- Burn-in potection in true ambient mode. -->
-    <bool name="config_enableBurnInProtection">true</bool>
+    <bool name="config_enableBurnInProtection">false</bool>
 
     <!-- Specifies the maximum burn-in offset displacement from the center. If -1, no maximum value
         will be used. -->
-    <integer name="config_burnInProtectionMaxRadius">70</integer>
+    <integer name="config_burnInProtectionMaxRadius">0</integer>
  
     <!-- Specifies the minimum burn-in offset horizontally. -->
-    <integer name="config_burnInProtectionMinHorizontalOffset">-15</integer>
+    <integer name="config_burnInProtectionMinHorizontalOffset">0</integer>
  
     <!-- Specifies the maximum burn-in offset horizontally. -->
-    <integer name="config_burnInProtectionMaxHorizontalOffset">15</integer>
+    <integer name="config_burnInProtectionMaxHorizontalOffset">0</integer>
  
     <!-- Specifies the minimum burn-in offset vertically. -->
-    <integer name="config_burnInProtectionMinVerticalOffset">-40</integer>
+    <integer name="config_burnInProtectionMinVerticalOffset">0</integer>
  
     <!-- Specifies the maximum burn-in offset vertically. -->
-    <integer name="config_burnInProtectionMaxVerticalOffset">40</integer>
+    <integer name="config_burnInProtectionMaxVerticalOffset">0</integer>
+
+    <string name="config_usbFunctionActivity" translatable="false"></string>
+
+     <!-- If AOD can show an ambient version of the wallpaper -->
+    <bool name="config_dozeSupportsAodWallpaper">true</bool>
+
+     <!-- If not empty, sets the AVC codec profile level used for the internal screen recorder.
+         Possible values: 3, 3.1, 3.2, 4, 4.1, 4.2 -->
+    <string name="config_screenRecorderAVCProfileLevel" translatable="false">3.1</string>
 
 </resources>
