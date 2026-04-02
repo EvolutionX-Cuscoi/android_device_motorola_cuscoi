@@ -37,9 +37,6 @@ $(foreach f,$(wildcard $(LOCAL_PATH)/rootdir/bin/*.sh),\
 # NFC
 TARGET_USES_ST_NFC := true
 
-PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/recovery/root/init.recovery.touch.rc:recovery/root/init.recovery.touch.rc
-    
 # Overlay
 PRODUCT_PACKAGES += \
     FrameworksResDevice \
