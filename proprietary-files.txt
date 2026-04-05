@@ -364,6 +364,25 @@ vendor/etc/display/qdcm_calib_data_nt37801_amoled_cmd_mode_dsi_csot_panel_with_D
 vendor/etc/display/qdcm_calib_data_nt37801_amoled_cmd_mode_dsi_csot_panel_with_DSC_CPHY.json
 vendor/etc/display/qdcm_calib_data_nt37801_amoled_video_mode_dsi_csot_panel_with_DSC.json
 vendor/etc/display/qdcm_calib_data_nt37801_amoled_video_mode_dsi_csot_panel_with_DSC_CPHY.json
+vendor/etc/display/backlight_calib_nt37801_amoled_cmd_mode_dsi_csot_panel_with_DSC_CPHY.xml
+vendor/etc/display/backlight_calib_nt37801_amoled_cmd_mode_dsi_csot_panel_with_DSC.xml
+vendor/etc/display/backlight_calib_nt37801_amoled_video_mode_dsi_csot_panel_with_DSC_CPHY.xml
+vendor/etc/display/backlight_calib_nt37801_amoled_video_mode_dsi_csot_panel_with_DSC.xml
+vendor/etc/display/DPU10__.xml
+vendor/etc/display/DPU660.xml
+vendor/etc/display/DPU830.xml
+vendor/etc/display/DPU860.xml
+vendor/etc/display/DPU9__.xml
+vendor/etc/display/advanced_sf_offsets.xml
+vendor/etc/display/camera_alignments.json
+vendor/etc/display/cpu_alignments.json
+vendor/etc/display/default_alignments.json
+vendor/etc/display/display_alignments.json
+vendor/etc/display/formats.json
+vendor/etc/display/graphics_alignments.json
+vendor/etc/display/ubwc_alignments.json
+vendor/etc/display/video_alignments.json
+
 
 # Fingerprint
 vendor/bin/hw/android.hardware.biometrics.fingerprint-service-jv
@@ -389,7 +408,7 @@ system_ext/framework/com.android.hotwordenrollment.common.util.jar
 vendor/usr/keylayout/fts_ts.kl
 vendor/usr/keylayout/goodix_ts.kl
 
-# MotCamera3
+# MotCamera5
 product/etc/permissions/com.motorola.camera5.xml
 product/etc/permissions/deviceowner-configuration-com.motorola.camera5.xml
 product/etc/permissions/privapp-permissions-com.motorola.camera5.xml
