@@ -23,8 +23,8 @@ PRODUCT_AAPT_PREBUILT_DPI := xxxhdpi xxhdpi xhdpi hdpi
 TARGET_SCREEN_HEIGHT := 2400
 TARGET_SCREEN_WIDTH := 1080
 
-# Camera Extensions
-$(call soong_config_set,libcameraservice,ext_lib,//$(LOCAL_PATH):libcameraservice_extension.cuscoi)
+# Camera Extensions for variable flashlight brightness(UNCOMMENT ON YOUR OWN RISK, IT WILL DAMAGE YOUR FLASHLIGHT ON HIGH BRIGHTNESS VALUES)
+#$(call soong_config_set,libcameraservice,ext_lib,//$(LOCAL_PATH):libcameraservice_extension.cuscoi)
 
 # Init
 $(foreach f,$(wildcard $(LOCAL_PATH)/rootdir/etc/init/hw/*.rc),\
@@ -56,7 +56,7 @@ PRODUCT_PACKAGES += \
 # Screen
 TARGET_SCREEN_DENSITY := 400
 
-COMMA := ,
+#COMMA := ,
 
 #PRODUCT_PACKAGES += \
 #    vendor.lineage.livedisplay-service.sdm \
