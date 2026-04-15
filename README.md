@@ -15,7 +15,7 @@ Platform | Snapdragon® 7s Gen 2 (SM7435)
 RAM & Storage | 8GB/128GB, 8GB/256GB, 12GB/256GB, 12GB/512GB (LPDDR4X RAM, UFS 2.2 storage)
 Shipped Android Version | 14
 Battery | Non-removable, 5000 mAh
-Display | 6.7″, 144Hz, 2388x1080 (393  ppi)
+Display | 6.7″, 144Hz, 2400x1080 (394  ppi)
 Rear camera | 50MP wide, 13MP ultrawide
 Front camera | 32MP in-display
 
