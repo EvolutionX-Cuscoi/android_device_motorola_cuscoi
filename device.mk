@@ -62,8 +62,8 @@ TARGET_SCREEN_DENSITY := 400
 #COMMA := ,
 
 #PRODUCT_PACKAGES += \
-#    vendor.lineage.livedisplay-service.sdm \
-#    vendor.lineage.livedisplay-service.sysfs
+#    vendor.livedisplay.cuscoi-service.sdm \
+#    vendor.livedisplay.cuscoi-service.sysfs
 
 #$(call soong_config_set_bool,livedisplay_sdm,enable_dm,false)
 #$(call soong_config_set_bool,livedisplay_sysfs,enable_af,true)
