@@ -59,18 +59,6 @@ PRODUCT_PACKAGES += \
 # Screen
 TARGET_SCREEN_DENSITY := 400
 
-#COMMA := ,
-
-#PRODUCT_PACKAGES += \
-#    vendor.livedisplay.cuscoi-service.sdm \
-#    vendor.livedisplay.cuscoi-service.sysfs
-
-#$(call soong_config_set_bool,livedisplay_sdm,enable_dm,false)
-#$(call soong_config_set_bool,livedisplay_sysfs,enable_af,true)
-#$(call soong_config_set, livedisplay_sysfs, af_path, /sys/devices/platform/soc/ae00000.qcom$(COMMA)mdss_mdp/drm/card0/card0-DSI-1/dc_dimming)
-#$(call soong_config_set_bool,livedisplay_sysfs,enable_se,true)
-#$(call soong_config_set, livedisplay_sysfs, se_path, /sys/devices/platform/soc/ae00000.qcom$(COMMA)mdss_mdp/drm/card0/card0-DSI-1/hbm)
-
 $(call soong_config_set,surfaceflinger,udfps_lib,//device/motorola/cuscoi/udfps:libudfps_extension.cuscoi)
 
 # Shipping API Level
