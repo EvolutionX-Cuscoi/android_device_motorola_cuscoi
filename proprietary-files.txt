@@ -386,13 +386,16 @@ vendor/etc/display/video_alignments.json
 
 # Fingerprint
 vendor/bin/hw/android.hardware.biometrics.fingerprint-service-jv
-vendor/bin/hw/android.hardware.biometrics.fingerprint@2.1-goodixservice 
+vendor/bin/hw/android.hardware.biometrics.fingerprint@2.1-goodixservice
+vendor/bin/hw/com.motorola.hardware.display.panel-service 
 vendor/etc/init/android.hardware.biometrics.fingerprint-service-jv2.rc
 vendor/etc/init/android.hardware.biometrics.fingerprint@2.1-goodixservice.rc
+vendor/etc/init/com.motorola.hardware.display.panel-service.rc
 vendor/lib64/hw/anc.hal.so
 vendor/lib64/hw/fingerprint.goodix.default.so
 vendor/lib64/com.motorola.hardware.biometric.fingerprint-V2-ndk.so
 vendor/lib64/com.motorola.hardware.display.panel-V1-ndk.so
+vendor/lib64/com.motorola.hardware.display.panel-V2-ndk.so
 vendor/lib64/com.motorola.hardware.display.panel@1.0.so
 vendor/lib64/libgf_hal.so
 vendor/lib64/vendor.goodix.hardware.biometrics.fingerprint-V1-ndk.so
@@ -544,4 +547,5 @@ vendor/firmware/tm_goodix_cfg_group.bin:recovery/root/vendor/firmware/tm_goodix_
 vendor/etc/vintf/manifest/com.motorola.hardware.camera.postprocess-impl.xml
 vendor/etc/vintf/manifest/manifest_IMoto_Fingerprint.xml 
 vendor/etc/vintf/manifest/vendor.qti.camera.provider.xml 
+vendor/etc/vintf/manifest/com.motorola.hardware.display.panel-service.xml
 
