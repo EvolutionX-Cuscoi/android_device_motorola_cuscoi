@@ -56,10 +56,12 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     RemovePackages
 
+# XiaomiParts
+PRODUCT_PACKAGES += \
+    XiaomiParts
+
 # Screen
 TARGET_SCREEN_DENSITY := 400
-
-$(call soong_config_set,surfaceflinger,udfps_lib,//device/motorola/cuscoi/udfps:libudfps_extension.cuscoi)
 
 # Shipping API Level
 BOARD_SHIPPING_API_LEVEL := 31
