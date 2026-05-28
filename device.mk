@@ -60,15 +60,17 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     XiaomiParts
 
+$(call soong_config_set,surfaceflinger,udfps_lib,//device/motorola/cuscoi/udfps:libudfps_extension.cuscoi)
+PRODUCT_PACKAGES += \
+   android.hardware.biometrics.fingerprint-service.motorola \
+   libudfpshandler
+
 # Screen
 TARGET_SCREEN_DENSITY := 400
 
 # Shipping API Level
 BOARD_SHIPPING_API_LEVEL := 31
 PRODUCT_SHIPPING_API_LEVEL := 34
-
-# Soong namespaces
-PRODUCT_SOONG_NAMESPACES += $(LOCAL_PATH)
 
 # Wi-Fi
 TARGET_WIFI_VARIANTS := adrastea

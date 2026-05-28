@@ -25,7 +25,7 @@ GKI_PATH=$(getprop $PROP_GKI_PATH)
 vendor_list=('goodix' 'jiiov')
 kernel_so_list=("/vendor/lib/modules/$GKI_PATH/goodix_fod_mmi.ko" "/vendor/lib/modules/$GKI_PATH/anc_fps_mmi.ko")
 kernel_so_name_list=("goodix_fod_mmi.ko" "anc_fps_mmi.ko")
-hal_list=('goodix_hal' 'jv_hal')
+hal_list=('vendor.fingerprint-default' 'jv_hal')
 last_vendor_index=`expr ${#vendor_list[@]} - 1`
 vendor_list_size=${#vendor_list[@]}
 
@@ -92,15 +92,26 @@ function start_hal_service(){
     log "start ${hal_list[$1]}"
     start ${hal_list[$1]}
 
-    for ii in $(seq 1 $MAX_TIMES)
-    do
-        sleep 0.1
-        fps_status=$(getprop $prop_fps_status)
-        # log "check fps vendor status: $fps_status"
-        if [ $fps_status != $FPS_STATUS_NONE ]; then
-            break
+if [ "${vendor_list[$1]}" == "goodix" ]; then
+        # The Xiaomi wrapper doesn't set prop_fps_status.
+        # Assume success if the character device node exists.
+        sleep 1.0
+        if [ -c /dev/goodix_fp ]; then
+            fps_status=$FPS_STATUS_OK
+        else
+            fps_status=$FPS_STATUS_NONE
         fi
-    done
+    else
+        # Keep original logic for Jiiov
+        for ii in $(seq 1 $MAX_TIMES)
+        do
+            sleep 0.1
+            fps_status=$(getprop $prop_fps_status)
+            if [ $fps_status != $FPS_STATUS_NONE ]; then
+                break
+            fi
+        done
+    fi
 
     log "fingerprint HAL status: $fps_status"
     if [ $fps_status == $FPS_STATUS_OK ]; then

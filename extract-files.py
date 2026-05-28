@@ -28,6 +28,11 @@ namespace_imports = [
 ]
 
 blob_fixups: blob_fixups_user_type = {
+    'vendor/etc/vintf/manifest/manifest_IMoto_Fingerprint.xml': blob_fixup()
+.regex_replace(
+            r'(?s) *<hal format="aidl">\s*<name>android\.hardware\.biometrics\.fingerprint</name>.*?</hal>\n*',
+            ''
+        ),
     'vendor/lib64/libBSTSWAD.so': blob_fixup()
         .clear_symbol_version('AHardwareBuffer_allocate')
         .clear_symbol_version('AHardwareBuffer_describe')

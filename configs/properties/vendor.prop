@@ -18,3 +18,8 @@ ro.vendor.display.sensortype=2
 persist.vendor.sensors.mot_tap=false
 ro.vendor.sensors.glance_approach=false
 ro.vendor.sensors.prox_for_call=false
+
+# Fingerprint
+persist.vendor.fingerprint.type=udfps
+persist.vendor.fingerprint.sensor_modules=goodix
+persist.vendor.fingerprint.sensor_location=538|2150|90

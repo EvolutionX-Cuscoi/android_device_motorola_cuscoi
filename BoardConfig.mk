@@ -50,5 +50,9 @@ VENDOR_SECURITY_PATCH := $(BOOT_SECURITY_PATCH)
 BOARD_AVB_ROLLBACK_INDEX := 22
 BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX := 22
 
+# Udfps
+TARGET_USES_FOD_ZPOS := true
+$(call soong_config_set,surfaceflinger,udfps_lib,//device/motorola/cuscoi/udfps:libudfps_extension.cuscoi)
+
 # inherit from the proprietary version
 include vendor/motorola/cuscoi/BoardConfigVendor.mk
