@@ -23,12 +23,6 @@ PRODUCT_AAPT_PREBUILT_DPI := xxxhdpi xxhdpi xhdpi hdpi
 TARGET_SCREEN_HEIGHT := 2400
 TARGET_SCREEN_WIDTH := 1080
 
-# Camera Extensions for variable flashlight brightness(UNCOMMENT ON YOUR OWN RISK, IT WILL DAMAGE YOUR FLASHLIGHT ON HIGH BRIGHTNESS VALUES)
-ifeq ($(TARGET_USE_VARIABLE_FLASHLIGHT),true)
-$(warning Using camera extensions for variable flashlight brightness. This may damage your flashlight on high brightness values!)
-$(call soong_config_set,libcameraservice,ext_lib,//$(LOCAL_PATH):libcameraservice_extension.cuscoi)
-endif
-
 # Init
 $(foreach f,$(wildcard $(LOCAL_PATH)/rootdir/etc/init/hw/*.rc),\
         $(eval PRODUCT_COPY_FILES += $(f):$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/$(notdir $f)))
