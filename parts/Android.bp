@@ -4,8 +4,30 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+soong_config_module_type {
+    name: "xiaomiparts_java_defaults",
+    module_type: "java_defaults",
+    config_namespace: "xiaomiPartsVars",
+    bool_variables: ["disable_refreshrate"],
+    properties: ["exclude_srcs", "manifest"],
+}
+
+xiaomiparts_java_defaults {
+    name: "xiaomiparts_defaults",
+    soong_config_variables: {
+        disable_refreshrate: {
+            exclude_srcs: [
+                "src/org/lineageos/settings/refreshrate/**/*.java",
+                "src/org/lineageos/settings/RefreshRateTileService.java",
+            ],
+            manifest: "AndroidManifest_NoRefreshRate.xml",
+        },
+    },
+}
+
 android_app {
     name: "XiaomiParts",
+    defaults: ["xiaomiparts_defaults"],
 
     srcs: ["src/**/*.java"],
     resource_dirs: ["res"],

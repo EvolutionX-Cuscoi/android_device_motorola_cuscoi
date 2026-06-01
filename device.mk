@@ -51,6 +51,7 @@ PRODUCT_PACKAGES += \
     RemovePackages
 
 # XiaomiParts
+$(call soong_config_set, xiaomiPartsVars, disable_refreshrate, true)
 PRODUCT_PACKAGES += \
     XiaomiParts
 
