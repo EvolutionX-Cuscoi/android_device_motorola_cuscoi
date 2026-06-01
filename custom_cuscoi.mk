@@ -24,9 +24,6 @@ $(call inherit-product, device/motorola/cuscoi/device.mk)
 # Inherit some common Lineage stuff.
 $(call inherit-product, vendor/custom/config/common_full_phone.mk)
 
-# Use variable flashlight (WARNING: High brightness values might damage your flashlight)
-TARGET_USE_VARIABLE_FLASHLIGHT := false
-
 PRODUCT_NAME := custom_cuscoi
 PRODUCT_DEVICE := cuscoi
 PRODUCT_MANUFACTURER := motorola
