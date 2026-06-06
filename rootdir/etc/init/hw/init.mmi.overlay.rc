@@ -13,8 +13,8 @@ on fs
 	insmod /vendor/lib/modules/moto_mmap_fault.ko
 	insmod /vendor/lib/modules/goodix_brl_mmi.ko
 	insmod /vendor/lib/modules/focaltech_v3_4.ko
-        insmod /vendor/lib/modules/sx937x_sar.ko
-        insmod /vendor/lib/modules/awinic_sar.ko
+    insmod /vendor/lib/modules/sx937x_sar.ko
+    insmod /vendor/lib/modules/awinic_sar.ko
 	insmod /vendor/lib/modules/con_dfpar.ko
 	#zram wb
         mount_all /vendor/etc/fstab.qcom.zram --early
@@ -228,6 +228,10 @@ on boot
     chmod 0660 /sys/class/leds/led:torch_0/brightness
     chmod 0660 /sys/class/leds/led:torch_1/brightness
     chmod 0660 /sys/class/leds/led:switch_0/brightness
+    # Fix permissions for all thermal engine hysteresis nodes
+    chown system system /sys/class/thermal/thermal_zone*/trip_point_*_hyst
+    chmod 0660 /sys/class/thermal/thermal_zone*/trip_point_*_hyst
+
 
     write /proc/sys/vm/dirty_background_bytes 26214400
     write /proc/sys/vm/dirty_bytes 104857600
