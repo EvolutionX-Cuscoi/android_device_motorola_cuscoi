@@ -30,6 +30,9 @@ PRODUCT_MANUFACTURER := motorola
 PRODUCT_BRAND := motorola
 PRODUCT_MODEL := motorola edge 50 fusion
 
+TARGET_HAS_UDFPS := true
+WITH_ADB_INSECURE := true
+
 PRODUCT_GMS_CLIENTID_BASE := android-motorola
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
