@@ -22,9 +22,9 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 $(call inherit-product, device/motorola/cuscoi/device.mk)
 
 # Inherit some common Lineage stuff.
-$(call inherit-product, vendor/custom/config/common_full_phone.mk)
+$(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
-PRODUCT_NAME := custom_cuscoi
+PRODUCT_NAME := lineage_cuscoi
 PRODUCT_DEVICE := cuscoi
 PRODUCT_MANUFACTURER := motorola
 PRODUCT_BRAND := motorola
@@ -33,6 +33,6 @@ PRODUCT_MODEL := motorola edge 50 fusion
 PRODUCT_GMS_CLIENTID_BASE := android-motorola
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
-    BuildDesc="cuscoi_g-user 16 W1UUI36H.110-31 2b2119-93af0 release-keys" \
-    BuildFingerprint=motorola/cuscoi_g/cuscoi:16/W1UUI36H.110-31/2b2119-93af0:user/release-keys \
+    BuildDesc="cuscoi_g-user 16 W1UUI36H.110-51-1 f75853-d1778b release-keys" \
+    BuildFingerprint=motorola/cuscoi_g/cuscoi:16/W1UUI36H.110-51-1/f75853-d1778b:user/release-keys \
     DeviceProduct=cuscoi_g
