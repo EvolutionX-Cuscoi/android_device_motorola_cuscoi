@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <thread>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #define BACKLIGHT_PATH "/sys/devices/platform/soc/ae00000.qcom,mdss_mdp/drm/card0/card0-DSI-1/local_hbm"
 
