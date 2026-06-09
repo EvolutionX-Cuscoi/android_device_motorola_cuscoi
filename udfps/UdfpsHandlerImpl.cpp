@@ -26,6 +26,7 @@
 class CuscoiUdfpsHandler : public UdfpsHandler {
 private:
     bool mIsGoodix = false;
+    bool mIsJiiov = false;
 
 public:
     void init(fingerprint_device_t* device) override {
@@ -34,6 +35,7 @@ public:
         // Check which sensor the init script found
         std::string fpVendor = android::base::GetProperty("persist.vendor.hardware.fingerprint", "");
         mIsGoodix = (fpVendor == "goodix");
+        mIsJiiov = (fpVendor == "jiiov" || fpVendor == "anc");
         
         LOG(INFO) << "Cuscoi UDFPS handler initialized. Vendor: " << fpVendor;
     }
@@ -47,6 +49,8 @@ public:
         // Only Goodix needs the proprietary TrustZone poke
         if (mIsGoodix) {
             sendGoodixExtCmd(241);
+        } else if (mIsJiiov) {
+            sendJiiovPointerEvent(true);
         }
     }
 
@@ -55,6 +59,8 @@ public:
         
         if (mIsGoodix) {
             sendGoodixExtCmd(242);
+        } else if (mIsJiiov) {
+            sendJiiovPointerEvent(false);
         }
         
         setHbm(false);
@@ -97,6 +103,30 @@ private:
         
         LOG(ERROR) << "Failed to resolve goodix_extCmd pointer";
         return -1;
+    }
+
+    int sendJiiovPointerEvent(bool down) {
+        void* anc_handle = dlopen("anc.hal.so", RTLD_NOW);
+        if (!anc_handle) {
+            LOG(ERROR) << "Failed to dlopen anc.hal.so";
+            return -1;
+        }
+        
+        int (*eventFunc)() = reinterpret_cast<int (*)()>(dlsym(anc_handle, down ? "AncOnPointerDown" : "AncOnPointerUp"));
+        if (!eventFunc) {
+            eventFunc = reinterpret_cast<int (*)()>(dlsym(anc_handle, down ? "FpmOnPointerDown" : "FpmOnPointerUp"));
+        }
+        
+        int ret = -1;
+        if (eventFunc) {
+            LOG(DEBUG) << "Sending JIIOV event: " << (down ? "PointerDown" : "PointerUp");
+            ret = eventFunc();
+        } else {
+            LOG(ERROR) << "Failed to resolve JIIOV pointer event functions";
+        }
+        
+        dlclose(anc_handle);
+        return ret;
     }
 
     void setHbm(bool enable) {
