@@ -47,7 +47,7 @@ public:
         setHbm(true);
         usleep(30000); 
         
-        // Only Goodix needs the proprietary TrustZone poke
+        // Only Goodix and JIIOV need the proprietary TrustZone poke
         if (mIsGoodix) {
             sendGoodixExtCmd(241);
         } else if (mIsJiiov) {
@@ -57,7 +57,6 @@ public:
 
     void onFingerUp() override {
         LOG(INFO) << "Finger up";
-        
         if (mIsGoodix) {
             sendGoodixExtCmd(242);
         } else if (mIsJiiov) {
@@ -84,46 +83,71 @@ private:
     std::atomic<int> mTimeoutToken{0};
     std::atomic<bool> mHbmActive{false};
 
-    // Helper to bypass the standard struct and call Goodix's proprietary extCmd
+    // Helper to call Goodix's proprietary extCmd
     int sendGoodixExtCmd(int32_t cmd) {
         if (!mDevice) {
             LOG(ERROR) << "mDevice is null, cannot send extCmd";
             return -1;
         }
         
-        // Cast the device pointer to an array of void pointers (the vtable)
         void** dev_vtable = reinterpret_cast<void**>(mDevice);
-        
-        // Grab the function pointer at index 26 (goodix_extCmd)
         auto extCmd = reinterpret_cast<int (*)(fingerprint_device_t*, int32_t)>(dev_vtable[26]);
-        
         if (extCmd) {
-            LOG(DEBUG) << "Sending Goodix extCmd: " << cmd;
+            LOG(DEBUG) << "Sending Goodix extCmd (vtable 26): " << cmd;
             return extCmd(mDevice, cmd);
         }
         
-        LOG(ERROR) << "Failed to resolve goodix_extCmd pointer";
+        LOG(ERROR) << "Failed to resolve Goodix extCmd pointer";
         return -1;
     }
 
     int sendJiiovPointerEvent(bool down) {
+        if (!mDevice) return -1;
+        
+        // Due to AOSP vs Motorola header mismatches, the fingerprint_device_t struct
+        // is 1 pointer larger on Moto (extCmd at index 16). 
+        // In Moto's fingerprint_device_t, hw_device_t is 15 pointers (120 bytes),
+        // followed by 11 standard HAL pointers, then extCmd (index 26), 
+        // and finally reserved[0] at index 27.
+        void** dev_vtable = reinterpret_cast<void**>(mDevice);
+        void* jiiov_dev = dev_vtable[27];
+        
+        if (!jiiov_dev) {
+            LOG(ERROR) << "jiiov_dev is null at index 27";
+            return -1;
+        }
+
         void* anc_handle = dlopen("anc.hal.so", RTLD_NOW);
         if (!anc_handle) {
             LOG(ERROR) << "Failed to dlopen anc.hal.so";
             return -1;
         }
         
-        int (*eventFunc)() = reinterpret_cast<int (*)()>(dlsym(anc_handle, down ? "AncOnPointerDown" : "AncOnPointerUp"));
-        if (!eventFunc) {
-            eventFunc = reinterpret_cast<int (*)()>(dlsym(anc_handle, down ? "FpmOnPointerDown" : "FpmOnPointerUp"));
-        }
+        int (*ancExec)(void*, int32_t, const uint8_t*, uint32_t, uint8_t**, uint32_t*) = 
+            reinterpret_cast<int (*)(void*, int32_t, const uint8_t*, uint32_t, uint8_t**, uint32_t*)>(dlsym(anc_handle, "AncExcuteCommand"));
         
         int ret = -1;
-        if (eventFunc) {
-            LOG(DEBUG) << "Sending JIIOV event: " << (down ? "PointerDown" : "PointerUp");
-            ret = eventFunc();
+        if (ancExec) {
+            LOG(DEBUG) << "Sending JIIOV AncExcuteCommand: " << (down ? "PointerDown (13)" : "PointerUp (14)");
+            uint8_t in_buf[3];
+            if (down) {
+                // For PointerDown (13), the service passes {type, auth, 99}.
+                // Decompiled code defaults 'type' to 3 and 'auth' to 0. 
+                // Passing 97 here causes out-of-bounds array access in FpmExcuteCommand.
+                in_buf[0] = 3;
+                in_buf[1] = 0;
+                in_buf[2] = 99;
+            } else {
+                // For PointerUp (14), the service hardcodes 0x6261 (97, 98) and 99.
+                in_buf[0] = 97;
+                in_buf[1] = 98;
+                in_buf[2] = 99;
+            }
+            uint8_t* out_buf = nullptr;
+            uint32_t out_len = 0;
+            ret = ancExec(jiiov_dev, down ? 13 : 14, in_buf, 3, &out_buf, &out_len);
         } else {
-            LOG(ERROR) << "Failed to resolve JIIOV pointer event functions";
+            LOG(ERROR) << "Failed to resolve AncExcuteCommand";
         }
         
         dlclose(anc_handle);
