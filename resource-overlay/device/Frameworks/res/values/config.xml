@@ -269,4 +269,7 @@
     <!-- Whether to disable Smart Pixels on UDFPS -->
     <bool name="config_disableSmartPixelsOnUDFPS">true</bool>
 
+     <!-- Smart 5G -->
+    <bool name="config_supportSmart5G">true</bool>
+
 </resources>
