@@ -55,7 +55,6 @@ $(call soong_config_set, xiaomiPartsVars, disable_refreshrate, true)
 PRODUCT_PACKAGES += \
     XiaomiParts
 
-$(call soong_config_set,surfaceflinger,udfps_lib,//device/motorola/cuscoi/udfps:libudfps_extension.cuscoi)
 PRODUCT_PACKAGES += \
    android.hardware.biometrics.fingerprint-service.motorola \
    libudfpshandler
