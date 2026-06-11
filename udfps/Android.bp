@@ -1,20 +1,3 @@
-cc_library_static {
-    name: "libudfps_extension.cuscoi",
-    srcs: ["UdfpsExtension.cpp"],
-    include_dirs: [
-        "frameworks/native/services/surfaceflinger/CompositionEngine/include",
-    ],
-    whole_static_libs: ["libudfpshandlerfucktory"],
-}
-
-cc_library_static {
-    name: "libudfpshandlerfucktory",
-    srcs: ["UdfpsHandler.cpp"],
-    local_include_dirs: ["include"],
-    header_libs: ["libhardware_headers"],
-    shared_libs: ["liblog", "libdl"],
-}
-
 cc_library {
     name: "libudfpshandler",
     vendor: true,
