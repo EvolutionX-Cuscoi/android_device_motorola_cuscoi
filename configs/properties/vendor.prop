@@ -18,6 +18,9 @@ ro.vendor.display.sensortype=2
 persist.vendor.sensors.mot_tap=false
 ro.vendor.sensors.glance_approach=false
 ro.vendor.sensors.prox_for_call=false
+ro.vendor.sensors.motorola.double_tap=true
+ro.vendor.sensors.motorola.single_tap=true
+ro.vendor.sensors.motorola.udfps=true
 
 # Fingerprint
 persist.vendor.fingerprint.type=udfps
