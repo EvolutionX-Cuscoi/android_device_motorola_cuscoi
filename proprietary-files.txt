@@ -114,6 +114,7 @@ vendor/lib64/libopencv.so
 vendor/lib64/libopencv3a.so
 vendor/lib64/libopestriping.so
 vendor/lib64/libportrait_repair_ppl3_ocl.so
+vendor/lib64/libportrait_repair_qnn.so
 vendor/lib64/libqll.so
 vendor/lib64/libqll10.so
 vendor/lib64/libqllengine.so
