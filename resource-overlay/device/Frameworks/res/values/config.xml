@@ -152,6 +152,18 @@
         <item>1200</item>
     </integer-array>
 
+    <integer-array translatable="false" name="config_brightnessThresholdsOfPeakRefreshRate">
+         <item>77</item>
+         <item>62</item>
+    </integer-array>
+
+    <integer-array translatable="false" name="config_ambientThresholdsOfPeakRefreshRate">
+         <item>70</item>
+         <item>-1</item>
+    </integer-array>
+
+    <integer name="config_defaultRefreshRateInZone">90</integer>
+
     <!-- MMS user agent string -->
     <string name="config_mms_user_agent" translatable="false">motorolaedge50fusion</string>
 
