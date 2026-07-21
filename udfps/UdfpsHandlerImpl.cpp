@@ -39,9 +39,57 @@ public:
         mIsJiiov = (fpVendor == "jiiov" || fpVendor == "anc");
         
         LOG(INFO) << "Cuscoi UDFPS handler initialized. Vendor: " << fpVendor;
+
+        std::thread([this]() {
+            int fd = -1;
+            const char* paths[] = {
+                "/sys/class/touchscreen/primary/udfps_pressed",
+                "/sys/class/touchscreen/touchscreen_dev/udfps_pressed",
+                "/sys/devices/virtual/touchscreen/primary/udfps_pressed"
+            };
+
+            for (auto& path : paths) {
+                fd = open(path, O_RDONLY);
+                if (fd >= 0) {
+                    LOG(INFO) << "Opened udfps_pressed node at " << path;
+                    break;
+                }
+            }
+
+            if (fd < 0) {
+                LOG(ERROR) << "Failed to open udfps_pressed node";
+                return;
+            }
+
+            struct pollfd fodPoll = {
+                .fd = fd,
+                .events = POLLERR | POLLPRI,
+                .revents = 0,
+            };
+
+            while (true) {
+                int rc = poll(&fodPoll, 1, -1);
+                if (rc < 0) {
+                    LOG(ERROR) << "failed to poll fd, err: " << rc;
+                    continue;
+                }
+
+                char c;
+                lseek(fd, 0, SEEK_SET);
+                if (read(fd, &c, 1) == 1) {
+                    if (c == '1') {
+                        this->onFingerDown(0, 0, 0, 0);
+                    } else if (c == '0') {
+                        this->onFingerUp();
+                    }
+                }
+            }
+        }).detach();
     }
 
     void onFingerDown(uint32_t x, uint32_t y, float /* minor */, float /* major */) override {
+        if (mFingerDown.exchange(true)) return; // Already down
+
         LOG(INFO) << "Finger down: x=" << x << " y=" << y;
         
         setHbm(true);
@@ -56,6 +104,8 @@ public:
     }
 
     void onFingerUp() override {
+        if (!mFingerDown.exchange(false)) return; // Already up
+
         LOG(INFO) << "Finger up";
         if (mIsGoodix) {
             sendGoodixExtCmd(242);
@@ -82,6 +132,7 @@ private:
     fingerprint_device_t* mDevice = nullptr;
     std::atomic<int> mTimeoutToken{0};
     std::atomic<bool> mHbmActive{false};
+    std::atomic<bool> mFingerDown{false};
 
     // Helper to call Goodix's proprietary extCmd
     int sendGoodixExtCmd(int32_t cmd) {
