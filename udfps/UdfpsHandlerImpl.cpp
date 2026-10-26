@@ -1,7 +1,19 @@
 /*
- * Copyright (C) 2024 The LineageOS Project
+ * Copyright (C) 2024-2026 The LineageOS Project
  *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * HBM transport adapted from LineageOS change 474261, patch set 10:
+ * https://review.lineageos.org/c/LineageOS/android_hardware_motorola/+/474261/10
+ *
+ * Build: retain libbase and libdl; add generated_kernel_headers to header_libs.
+ * The selected kernel headers must expose Motorola's panel_param_info,
+ * PARAM_HBM and DRM_IOCTL_SET_PANEL_FEATURE in display/drm/sde_drm.h.
+ *
+ * The proprietary HAL offsets and AncExcuteCommand ABI below are inherited
+ * from the supplied cuscoi handler, NOT established by the LineageOS change.
+ * They require matching 64-bit Motorola blobs. This is fingerprint_device_t
+ * storage, not a C++ virtual-method table.
  */
 
 #define LOG_TAG "UdfpsHandler.cuscoi"
@@ -10,246 +22,309 @@
 
 #include <android-base/logging.h>
 #include <android-base/properties.h>
+#include <android-base/unique_fd.h>
+#include <display/drm/sde_drm.h>
+
+#include <atomic>
+#include <cerrno>
+#include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <dlfcn.h>
 #include <fcntl.h>
+#include <mutex>
 #include <poll.h>
+#include <sys/eventfd.h>
+#include <sys/ioctl.h>
 #include <thread>
 #include <unistd.h>
-#include <dlfcn.h>
 
-#define BACKLIGHT_PATH "/sys/devices/platform/soc/ae00000.qcom,mdss_mdp/drm/card0/card0-DSI-1/local_hbm"
+namespace {
+constexpr char kDrmDevice[] = "/dev/dri/card0";
+constexpr int kHbmOff = 0;
+constexpr int kHbmFodOn = 2;
+constexpr int32_t kGoodixFingerDown = 241;
+constexpr int32_t kGoodixFingerUp = 242;
+constexpr size_t kExtCmdSlot = 26;
+constexpr size_t kJiiovDeviceSlot = 27;
 
-#define HBM_ON_MAGIC_VALUE  "1"
-#define HBM_OFF_MAGIC_VALUE "0"
-
-// Goodix specific extension commands
-#define GOODIX_EXT_CMD_FINGER_DOWN 241
-#define GOODIX_EXT_CMD_FINGER_UP   242
+// Preserve the supplied handler's 400 ms fallback. Unlike the original,
+// expiry releases the vendor finger state as well as HBM. Increase this if
+// enrollment requires longer captures. The referenced handler uses 200 ms.
+constexpr auto kCaptureTimeout = std::chrono::milliseconds(400);
+constexpr auto kHbmSettleTime = std::chrono::milliseconds(30);
+using Clock = std::chrono::steady_clock;
+}  // namespace
 
 class CuscoiUdfpsHandler : public UdfpsHandler {
-private:
-    bool mIsGoodix = false;
-    bool mIsJiiov = false;
+  public:
+    ~CuscoiUdfpsHandler() {
+        mStopping.store(true);
+        wakeWorker();
+        if (mWorker.joinable()) mWorker.join();
 
-public:
-    void init(fingerprint_device_t* device) override {
-        mDevice = device;
-        
-        // Check which sensor the init script found
-        std::string fpVendor = android::base::GetProperty("persist.vendor.hardware.fingerprint", "");
-        mIsGoodix = (fpVendor == "goodix");
-        mIsJiiov = (fpVendor == "jiiov" || fpVendor == "anc");
-        
-        LOG(INFO) << "Cuscoi UDFPS handler initialized. Vendor: " << fpVendor;
-
-        std::thread([this]() {
-            int fd = -1;
-            const char* paths[] = {
-                "/sys/class/touchscreen/primary/udfps_pressed",
-                "/sys/class/touchscreen/touchscreen_dev/udfps_pressed",
-                "/sys/devices/virtual/touchscreen/primary/udfps_pressed"
-            };
-
-            for (auto& path : paths) {
-                fd = open(path, O_RDONLY);
-                if (fd >= 0) {
-                    LOG(INFO) << "Opened udfps_pressed node at " << path;
-                    break;
-                }
-            }
-
-            if (fd < 0) {
-                LOG(ERROR) << "Failed to open udfps_pressed node";
-                return;
-            }
-
-            struct pollfd fodPoll = {
-                .fd = fd,
-                .events = POLLERR | POLLPRI,
-                .revents = 0,
-            };
-
-            while (true) {
-                int rc = poll(&fodPoll, 1, -1);
-                if (rc < 0) {
-                    LOG(ERROR) << "failed to poll fd, err: " << rc;
-                    continue;
-                }
-
-                char c;
-                lseek(fd, 0, SEEK_SET);
-                if (read(fd, &c, 1) == 1) {
-                    if (c == '1') {
-                        this->onFingerDown(0, 0, 0, 0);
-                    } else if (c == '0') {
-                        this->onFingerUp();
-                    }
-                }
-            }
-        }).detach();
+        std::lock_guard<std::mutex> lock(mMutex);
+        releaseFingerLocked();
+        if (mAncHandle != nullptr) dlclose(mAncHandle);
     }
 
-    void onFingerDown(uint32_t x, uint32_t y, float /* minor */, float /* major */) override {
-        if (mFingerDown.exchange(true)) return; // Already down
+    void init(fingerprint_device_t* device) override {
+        // init is a one-time lifecycle operation, before any callbacks.
+        mDevice = device;
+        const auto vendor = android::base::GetProperty("persist.vendor.hardware.fingerprint", "");
+        mIsGoodix = vendor == "goodix";
+        mIsJiiov = vendor == "jiiov" || vendor == "anc";
+        LOG(INFO) << "Initializing cuscoi UDFPS, vendor=" << vendor;
+
+        if (mIsJiiov) {
+            mAncHandle = dlopen("anc.hal.so", RTLD_NOW | RTLD_LOCAL);
+            if (mAncHandle == nullptr) {
+                LOG(ERROR) << "dlopen(anc.hal.so): " << dlerror();
+            } else {
+                mAncExecute = reinterpret_cast<AncExecute>(dlsym(mAncHandle, "AncExcuteCommand"));
+                if (mAncExecute == nullptr) {
+                    LOG(ERROR) << "dlsym(AncExcuteCommand): " << dlerror();
+                }
+            }
+        }
+
+        mWakeFd.reset(eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK));
+        if (mWakeFd.get() < 0) {
+            PLOG(ERROR) << "eventfd failed; refusing to enable HBM without watchdog";
+            return;
+        }
+        mWorker = std::thread(&CuscoiUdfpsHandler::workerLoop, this);
+    }
+
+    void onFingerDown(uint32_t x, uint32_t y, float /*minor*/, float /*major*/) override {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (mStopping.load() || mWakeFd.get() < 0 || mFingerDown) return;
 
         LOG(INFO) << "Finger down: x=" << x << " y=" << y;
-        
-        setHbm(true);
-        usleep(30000); 
-        
-        // Only Goodix and JIIOV need the proprietary TrustZone poke
-        if (mIsGoodix) {
-            sendGoodixExtCmd(241);
-        } else if (mIsJiiov) {
-            sendJiiovPointerEvent(true);
+        if (!setHbmLocked(true)) return;
+
+        // Preserve the supplied panel-settling delay. It is not a display
+        // readiness acknowledgement; tune against the actual panel driver.
+        std::this_thread::sleep_for(kHbmSettleTime);
+        if (sendPointerEventLocked(true) != 0) {
+            LOG(ERROR) << "Vendor finger-down command failed";
+            // A failing command may still have partially changed vendor state.
+            sendPointerEventLocked(false);
+            setHbmLocked(false);
+            mDeadline = Clock::now() + kCaptureTimeout;
+            wakeWorker();
+            return;
         }
+        mFingerDown = true;
+        mDeadline = Clock::now() + kCaptureTimeout;
+        wakeWorker();
     }
 
     void onFingerUp() override {
-        if (!mFingerDown.exchange(false)) return; // Already up
-
-        LOG(INFO) << "Finger up";
-        if (mIsGoodix) {
-            sendGoodixExtCmd(242);
-        } else if (mIsJiiov) {
-            sendJiiovPointerEvent(false);
-        }
-        
-        setHbm(false);
+        std::lock_guard<std::mutex> lock(mMutex);
+        releaseFingerLocked();
+        wakeWorker();
     }
 
     void onAcquired(int32_t result, int32_t vendorCode) override {
-        // Do NOT turn off HBM here - this fires DURING capture, not after!
-        // Turning off HBM here interrupts the optical sensor mid-capture.
-        // The framework will call onFingerUp when the capture session ends.
         LOG(DEBUG) << "onAcquired: result=" << result << " vendorCode=" << vendorCode;
     }
 
     void cancel() override {
+        std::lock_guard<std::mutex> lock(mMutex);
         LOG(INFO) << "UDFPS cancel";
-        setHbm(false);
+        releaseFingerLocked();
+        wakeWorker();
     }
 
-private:
-    fingerprint_device_t* mDevice = nullptr;
-    std::atomic<int> mTimeoutToken{0};
-    std::atomic<bool> mHbmActive{false};
-    std::atomic<bool> mFingerDown{false};
+  private:
+    using AncExecute = int (*)(void*, int32_t, const uint8_t*, uint32_t, uint8_t**, uint32_t*);
 
-    // Helper to call Goodix's proprietary extCmd
-    int sendGoodixExtCmd(int32_t cmd) {
-        if (!mDevice) {
-            LOG(ERROR) << "mDevice is null, cannot send extCmd";
-            return -1;
+    bool setHbmLocked(bool enable) {
+        if (mHbmActive == enable) return true;
+
+        android::base::unique_fd fd(open(kDrmDevice, O_RDWR | O_CLOEXEC));
+        if (fd.get() < 0) {
+            PLOG(ERROR) << "Failed to open " << kDrmDevice;
+            return false;
         }
-        
-        void** dev_vtable = reinterpret_cast<void**>(mDevice);
-        auto extCmd = reinterpret_cast<int (*)(fingerprint_device_t*, int32_t)>(dev_vtable[26]);
-        if (extCmd) {
-            LOG(DEBUG) << "Sending Goodix extCmd (vtable 26): " << cmd;
-            return extCmd(mDevice, cmd);
+
+        // Use the actual generated kernel UAPI; do not guess ioctl numbers
+        // or substitute a hand-written struct with a potentially different ABI.
+        struct panel_param_info param = {};
+        param.param_idx = PARAM_HBM;
+        param.value = enable ? kHbmFodOn : kHbmOff;
+        int ret;
+        do {
+            ret = ioctl(fd.get(), DRM_IOCTL_SET_PANEL_FEATURE, &param);
+        } while (ret < 0 && errno == EINTR);
+        if (ret < 0) {
+            PLOG(ERROR) << "DRM_IOCTL_SET_PANEL_FEATURE(PARAM_HBM, " << param.value << ") failed";
+            return false;
         }
-        
-        LOG(ERROR) << "Failed to resolve Goodix extCmd pointer";
-        return -1;
+        mHbmActive = enable;
+        LOG(INFO) << "FOD HBM " << (enable ? "enabled" : "disabled");
+        return true;
     }
 
-    int sendJiiovPointerEvent(bool down) {
-        if (!mDevice) return -1;
-        
-        // Due to AOSP vs Motorola header mismatches, the fingerprint_device_t struct
-        // is 1 pointer larger on Moto (extCmd at index 16). 
-        // In Moto's fingerprint_device_t, hw_device_t is 15 pointers (120 bytes),
-        // followed by 11 standard HAL pointers, then extCmd (index 26), 
-        // and finally reserved[0] at index 27.
-        void** dev_vtable = reinterpret_cast<void**>(mDevice);
-        void* jiiov_dev = dev_vtable[27];
-        
-        if (!jiiov_dev) {
-            LOG(ERROR) << "jiiov_dev is null at index 27";
+    int sendPointerEventLocked(bool down) {
+        if (!mIsGoodix && !mIsJiiov) return 0;
+        if (mDevice == nullptr) {
+            LOG(ERROR) << "Cannot send vendor command: fingerprint device is null";
             return -1;
         }
 
-        void* anc_handle = dlopen("anc.hal.so", RTLD_NOW);
-        if (!anc_handle) {
-            LOG(ERROR) << "Failed to dlopen anc.hal.so";
-            return -1;
-        }
-        
-        int (*ancExec)(void*, int32_t, const uint8_t*, uint32_t, uint8_t**, uint32_t*) = 
-            reinterpret_cast<int (*)(void*, int32_t, const uint8_t*, uint32_t, uint8_t**, uint32_t*)>(dlsym(anc_handle, "AncExcuteCommand"));
-        
-        int ret = -1;
-        if (ancExec) {
-            LOG(DEBUG) << "Sending JIIOV AncExcuteCommand: " << (down ? "PointerDown (13)" : "PointerUp (14)");
-            uint8_t in_buf[3];
-            if (down) {
-                // For PointerDown (13), the service passes {type, auth, 99}.
-                // Decompiled code defaults 'type' to 3 and 'auth' to 0. 
-                // Passing 97 here causes out-of-bounds array access in FpmExcuteCommand.
-                in_buf[0] = 3;
-                in_buf[1] = 0;
-                in_buf[2] = 99;
-            } else {
-                // For PointerUp (14), the service hardcodes 0x6261 (97, 98) and 99.
-                in_buf[0] = 97;
-                in_buf[1] = 98;
-                in_buf[2] = 99;
+        static_assert(sizeof(void*) == 8, "Motorola HAL offsets below require the 64-bit blob ABI");
+        if (mIsGoodix) {
+            using ExtCmd = int (*)(fingerprint_device_t*, int32_t);
+            ExtCmd extCmd = nullptr;
+            std::memcpy(&extCmd, reinterpret_cast<const uint8_t*>(mDevice) +
+                                    kExtCmdSlot * sizeof(void*), sizeof(extCmd));
+            if (extCmd == nullptr) {
+                LOG(ERROR) << "Goodix extCmd pointer is null";
+                return -1;
             }
-            uint8_t* out_buf = nullptr;
-            uint32_t out_len = 0;
-            ret = ancExec(jiiov_dev, down ? 13 : 14, in_buf, 3, &out_buf, &out_len);
-        } else {
-            LOG(ERROR) << "Failed to resolve AncExcuteCommand";
+            return extCmd(mDevice, down ? kGoodixFingerDown : kGoodixFingerUp);
         }
-        
-        dlclose(anc_handle);
-        return ret;
+
+        if (mAncExecute == nullptr) return -1;
+        void* jiiovDevice = nullptr;
+        std::memcpy(&jiiovDevice, reinterpret_cast<const uint8_t*>(mDevice) +
+                                    kJiiovDeviceSlot * sizeof(void*), sizeof(jiiovDevice));
+        if (jiiovDevice == nullptr) {
+            LOG(ERROR) << "JIIOV context pointer is null";
+            return -1;
+        }
+        const uint8_t downData[] = {3, 0, 99};
+        const uint8_t upData[] = {97, 98, 99};
+        uint8_t* output = nullptr;
+        uint32_t outputLength = 0;
+        // Output ownership is blob-specific; do not guess an allocator/free API.
+        return mAncExecute(jiiovDevice, down ? 13 : 14, down ? downData : upData,
+                           sizeof(downData), &output, &outputLength);
     }
 
-    void setHbm(bool enable) {
-        // Skip redundant state changes
-        if (mHbmActive.load() == enable) {
-            LOG(DEBUG) << "setHbm: Already " << (enable ? "ON" : "OFF") << ", skipping";
-            return;
+    void releaseFingerLocked() {
+        if (mFingerDown) {
+            const int ret = sendPointerEventLocked(false);
+            if (ret != 0) LOG(ERROR) << "Vendor finger-up command failed: " << ret;
+            mFingerDown = false;
+        }
+        setHbmLocked(false);
+        // If disabling HBM failed, the watchdog retries rather than falsely
+        // recording it as off. No detached callbacks can outlive this object.
+        mDeadline = Clock::now() + kCaptureTimeout;
+    }
+
+    void wakeWorker() {
+        if (mWakeFd.get() < 0) return;
+        const uint64_t wake = 1;
+        ssize_t ret;
+        do {
+            ret = write(mWakeFd.get(), &wake, sizeof(wake));
+        } while (ret < 0 && errno == EINTR);
+        // EAGAIN means a wake is already pending.
+        if (ret < 0 && errno != EAGAIN) PLOG(ERROR) << "Worker wake failed";
+    }
+
+    static char readTouchState(int fd) {
+        char state = '\0';
+        if (lseek(fd, 0, SEEK_SET) < 0) return '\0';
+        ssize_t ret;
+        do {
+            ret = read(fd, &state, 1);
+        } while (ret < 0 && errno == EINTR);
+        return ret == 1 ? state : '\0';
+    }
+
+    void workerLoop() {
+        android::base::unique_fd touchFd;
+        constexpr const char* paths[] = {
+            "/sys/class/touchscreen/primary/udfps_pressed",
+            "/sys/class/touchscreen/touchscreen_dev/udfps_pressed",
+            "/sys/devices/virtual/touchscreen/primary/udfps_pressed",
+        };
+        for (const auto* path : paths) {
+            touchFd.reset(open(path, O_RDONLY | O_CLOEXEC));
+            if (touchFd.get() >= 0) {
+                LOG(INFO) << "Opened " << path;
+                // Clear any initial sysfs notification before polling.
+                readTouchState(touchFd.get());
+                break;
+            }
+        }
+        if (touchFd.get() < 0) {
+            LOG(WARNING) << "No udfps_pressed node; using framework pointer callbacks";
         }
 
-        const char* value = enable ? HBM_ON_MAGIC_VALUE : HBM_OFF_MAGIC_VALUE;
-        LOG(INFO) << "setHbm: " << (enable ? "ON" : "OFF");
-
-        int fd = open(BACKLIGHT_PATH, O_WRONLY | O_CLOEXEC);
-        if (fd < 0) {
-            LOG(ERROR) << "Failed to open backlight path: " << strerror(errno);
-            return;
-        }
-
-        ssize_t written = write(fd, value, strlen(value));
-        if (written < 0) {
-            LOG(ERROR) << "Failed to write HBM value: " << strerror(errno);
-        } else {
-            mHbmActive.store(enable);
-            LOG(INFO) << "HBM " << (enable ? "enabled" : "disabled") << " successfully";            
-        }
-
-        close(fd);
-
-        /* * Safety Timeout with Cancellation Token:
-         * Prevents stuck HBM if onFingerUp is never called.
-         * Token ensures old timeouts don't fire after new finger down events.
-         * 800ms allows sufficient time for enrollment captures.
-         */
-        if (enable) {
-            int currentToken = ++mTimeoutToken;
-            std::thread([this, currentToken]() {
-                usleep(400000); // 400ms - Reduced to minimize white patch persistence
-                if (mTimeoutToken.load() == currentToken && mHbmActive.load()) {
-                    LOG(INFO) << "Safety Timeout: Forcing HBM OFF";
-                    this->setHbm(false);
+        while (!mStopping.load()) {
+            int timeout = -1;
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                if (mFingerDown || mHbmActive) {
+                    const auto remaining = mDeadline - Clock::now();
+                    if (remaining <= Clock::duration::zero()) {
+                        LOG(INFO) << "Capture timeout: releasing finger and FOD HBM";
+                        releaseFingerLocked();
+                    }
+                    if (mFingerDown || mHbmActive) {
+                        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                mDeadline - Clock::now()).count();
+                        timeout = ms > 0 ? static_cast<int>(ms + 1) : 0;
+                    }
                 }
-            }).detach();
-        } else {
-            mTimeoutToken++; // Invalidate any pending timeout
+            }
+
+            struct pollfd fds[] = {
+                {mWakeFd.get(), POLLIN, 0},
+                {touchFd.get(), POLLERR | POLLPRI, 0},
+            };
+            const int ret = poll(fds, 2, timeout);
+            if (ret < 0) {
+                if (errno == EINTR) continue;
+                PLOG(ERROR) << "UDFPS poll failed";
+                mStopping.store(true);
+                std::lock_guard<std::mutex> lock(mMutex);
+                releaseFingerLocked();
+                return;
+            }
+            if (fds[0].revents & POLLIN) {
+                uint64_t wake;
+                ssize_t count;
+                do {
+                    count = read(mWakeFd.get(), &wake, sizeof(wake));
+                } while (count < 0 && errno == EINTR);
+            }
+            if (mStopping.load()) break;
+            if (fds[1].revents & (POLLHUP | POLLNVAL)) {
+                LOG(ERROR) << "Touch node disconnected; using framework pointer callbacks";
+                touchFd.reset();
+                onFingerUp();
+            } else if (fds[1].revents & (POLLERR | POLLPRI)) {
+                const char state = readTouchState(touchFd.get());
+                if (state == '1') onFingerDown(0, 0, 0, 0);
+                else if (state == '0') onFingerUp();
+                else {
+                    LOG(ERROR) << "Invalid touch node state; disabling touch polling";
+                    touchFd.reset();
+                    onFingerUp();
+                }
+            }
         }
     }
+
+    fingerprint_device_t* mDevice = nullptr;
+    bool mIsGoodix = false;
+    bool mIsJiiov = false;
+    bool mFingerDown = false;
+    bool mHbmActive = false;
+    void* mAncHandle = nullptr;
+    AncExecute mAncExecute = nullptr;
+    Clock::time_point mDeadline{};
+    std::mutex mMutex;
+    std::atomic<bool> mStopping{false};
+    android::base::unique_fd mWakeFd;
+    std::thread mWorker;
 };
 
 static UdfpsHandler* create() {
@@ -260,7 +335,9 @@ static void destroy(UdfpsHandler* handler) {
     delete handler;
 }
 
-extern "C" UdfpsHandlerFactory UDFPS_HANDLER_FACTORY = {
+extern "C" {
+UdfpsHandlerFactory UDFPS_HANDLER_FACTORY = {
     .create = create,
     .destroy = destroy,
 };
+}

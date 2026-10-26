@@ -9,5 +9,8 @@ cc_library {
         "libutils",
         "libhidlbase",
     ],
-    header_libs: ["libhardware_headers"],
+    header_libs: [
+        "generated_kernel_headers",
+        "libhardware_headers",
+    ],
 }
