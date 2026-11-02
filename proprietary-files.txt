@@ -418,6 +418,18 @@ system/framework/moto-core_services.jar
 system/framework/moto-settings.jar
 system_ext/bin/motsettings
 system_ext/priv-app/MotorolaSettingsProvider/MotorolaSettingsProvider.apk
+product/etc/init/init.motcamera5.lens.rc
+product/etc/permissions/com.motorola.camera5.adobe_scan.xml
+system/lib64/com.motorola.hardware.camera.postprocess-V1-ndk.so;MODULE_SUFFIX=_system
+system_ext/lib64/libenginepostproc.moto.so
+system_ext/lib64/libmotopostprocaidlclient.so
+vendor/etc/tetras/portrait_repair_composite_hd.model
+vendor/etc/tetras/portrait_repair_composite_rear.model
+vendor/lib/rfsa/adsp/libSuperSensor_skel.so
+vendor/lib/rfsa/adsp/libworker_pool.so
+vendor/lib/rfsa/adsp/qnn_v2.17/libQnnHtpV73.so
+vendor/lib/rfsa/adsp/qnn_v2.17/libQnnHtpV73Skel.so
+vendor/lib64/libsdk_sr.so
 
 # Moto Permissions
 product/etc/permissions/com.motorola.camera5.cusco.xml
