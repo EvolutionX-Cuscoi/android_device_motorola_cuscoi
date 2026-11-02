@@ -36,6 +36,6 @@ WITH_ADB_INSECURE := true
 PRODUCT_GMS_CLIENTID_BASE := android-motorola
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
-    BuildDesc="cuscoi_g-user 16 W1UUIS36H.110-51-1-1 b837c4-71795a release-keys" \
-    BuildFingerprint=motorola/cuscoi_g/cuscoi:16/W1UUIS36H.110-51-1-1/b837c4-71795a:user/release-keys \
+    BuildDesc="cuscoi_g-user 16 W1UUIS36H.110-42-4 83f47c-9d83a release-keys" \
+    BuildFingerprint=motorola/cuscoi_g/cuscoi:16/W1UUIS36H.110-42-4/83f47c-9d83a:user/release-keys \
     DeviceProduct=cuscoi_g
