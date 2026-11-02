@@ -386,7 +386,6 @@ vendor/etc/display/video_alignments.json
 # Fingerprint
 vendor/lib64/hw/anc.hal.so
 vendor/lib64/hw/fingerprint.goodix.default.so
-vendor/lib64/com.motorola.hardware.biometric.fingerprint-V2-ndk.so
 vendor/lib64/com.motorola.hardware.display.panel-V1-ndk.so
 vendor/lib64/com.motorola.hardware.display.panel@1.0.so
 vendor/lib64/libgf_hal.so
