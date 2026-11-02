@@ -10,6 +10,12 @@ vendor.audio.max.temp=60.0
 # Camera
 persist.vendor.camera.physical.num=3
 persist.vendor.camera.privapp.list=com.motorola.camera5,com.android.DeviceAsWebcam
+persist.vendor.camera.expose.aux=1
+vendor.camera.aux.packagelist=org.codeaurora.snapcam,com.motorola.camera3,com.motorola.camera5,com.motorola.motocit
+vendor.camera.aux.packagelist2=com.motorola.ccc,com.android.settings,com.motorola.handycam
+ro.camera.enableCamera1MaxZsl=1
+ro.camerax.extensions.enabled=true
+ro.vendor.audio.camera_video_ainr.supported=true
 
 # Display
 ro.vendor.display.sensortype=2
