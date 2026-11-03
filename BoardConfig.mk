@@ -51,3 +51,6 @@ BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX := 22
 
 # inherit from the proprietary version
 include vendor/motorola/cuscoi/BoardConfigVendor.mk
+
+# Kernel
+TARGET_MERGE_DTBOS_WILDCARD := parrot-cuscoi-*
