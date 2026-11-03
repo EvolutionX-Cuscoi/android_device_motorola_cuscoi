@@ -1,0 +1,14 @@
+[
+  {
+    "repository": "EvolutionX-Cuscoi/android_device_motorola_sm7435-common",
+    "target_path": "device/motorola/sm7435-common",
+    "remote": "github",
+    "revision": "17"
+  },
+  {
+    "repository": "EvolutionX-Cuscoi/proprietary_vendor_motorola_cuscoi",
+    "target_path": "vendor/motorola/cuscoi",
+    "remote": "github",
+    "revision": "17"
+  }
+]
